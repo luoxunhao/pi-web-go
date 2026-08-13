@@ -14,6 +14,7 @@ type Dependencies struct {
 	Cursor       *events.CursorStore
 	SessionMgr   *session.Manager
 	FileAccess   *files.Access
+	StaticDir    string
 	WebPassword  string
 	AllowedHosts []string
 }

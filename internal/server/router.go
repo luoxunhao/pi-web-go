@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -64,7 +67,29 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Get("/api/auth/providers", mh.providers)
 		r.Get("/api/auth/all-providers", mh.allProviders)
 	}
+	if deps.StaticDir != "" {
+		staticRoot := http.Dir(deps.StaticDir)
+		fileServer := http.FileServer(staticRoot)
+		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasPrefix(r.URL.Path, "/api/") {
+				writeNotFound(w)
+				return
+			}
+			target := filepath.Join(deps.StaticDir, filepath.FromSlash(strings.TrimPrefix(r.URL.Path, "/")))
+			if stat, err := os.Stat(target); err == nil && !stat.IsDir() {
+				fileServer.ServeHTTP(w, r)
+				return
+			}
+			http.ServeFile(w, r, filepath.Join(deps.StaticDir, "index.html"))
+		})
+	}
 	return r
+}
+
+func writeNotFound(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusNotFound)
+	_, _ = fmt.Fprint(w, `{"error":"Not found"}`)
 }
 
 func runningEventsHandler(mgr *session.Manager) http.HandlerFunc {

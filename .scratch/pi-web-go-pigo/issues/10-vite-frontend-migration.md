@@ -10,4 +10,8 @@
 
 ## Status
 
-open
+resolved
+
+## Answer
+
+upstream pi-web 已迁入 `frontend/`，Next.js 依赖/API routes 已移除，Vite + React 构建通过，`AppShell` 作为入口，Go server SPA fallback 托管 `dist`。详见 `research/10-vite-frontend-migration.md`。

@@ -43,6 +43,7 @@ func main() {
 		Cursor:       events.NewCursorStore(),
 		SessionMgr:   session.NewManager(10 * time.Minute),
 		FileAccess:   access,
+		StaticDir:    cfg.Web.FrontendDir,
 		WebPassword:  cfg.Web.Password,
 		AllowedHosts: cfg.Web.AllowedHosts,
 	}

@@ -10,4 +10,8 @@
 
 ## Status
 
-open
+resolved
+
+## Answer
+
+已实现 `internal/server/models.go`：`/api/models`、`/api/models-config`、discover/test、`/api/auth/api-key/*`、providers/all-providers 全部代理 pigo config/providers API，不读写 `config.toml`。详见 `research/06-models-config-proxy.md`。

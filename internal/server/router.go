@@ -44,6 +44,19 @@ func NewRouter(deps Dependencies) http.Handler {
 	if deps.FileAccess != nil {
 		r.Handle("/api/files/*", &files.Handler{Access: deps.FileAccess})
 	}
+	if deps.PigoClient != nil {
+		mh := &modelsHandler{client: deps.PigoClient}
+		r.Get("/api/models", mh.listModels)
+		r.Get("/api/models-config", mh.getModelsConfig)
+		r.Put("/api/models-config", mh.putModelsConfig)
+		r.Post("/api/models-config/discover", mh.discoverModels)
+		r.Post("/api/models-config/test", mh.testModel)
+		r.Get("/api/auth/api-key/{provider}", mh.apiKeyGet)
+		r.Post("/api/auth/api-key/{provider}", mh.apiKeyPost)
+		r.Delete("/api/auth/api-key/{provider}", mh.apiKeyDelete)
+		r.Get("/api/auth/providers", mh.providers)
+		r.Get("/api/auth/all-providers", mh.allProviders)
+	}
 	return r
 }
 

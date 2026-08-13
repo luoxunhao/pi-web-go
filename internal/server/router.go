@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/luoxunhao/pi-web-go/internal/events"
+	"github.com/luoxunhao/pi-web-go/internal/files"
 	"github.com/luoxunhao/pi-web-go/internal/session"
 )
 
@@ -39,6 +40,10 @@ func NewRouter(deps Dependencies) http.Handler {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{"runningSessionIds": ids})
 	})
 	r.Get("/api/agent/running/events", runningEventsHandler(deps.SessionMgr))
+
+	if deps.FileAccess != nil {
+		r.Handle("/api/files/*", &files.Handler{Access: deps.FileAccess})
+	}
 	return r
 }
 

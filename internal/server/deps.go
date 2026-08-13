@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/luoxunhao/pi-web-go/internal/events"
+	"github.com/luoxunhao/pi-web-go/internal/files"
 	"github.com/luoxunhao/pi-web-go/internal/pigo"
 	"github.com/luoxunhao/pi-web-go/internal/session"
 )
@@ -12,6 +13,7 @@ type Dependencies struct {
 	Converter    *events.Converter
 	Cursor       *events.CursorStore
 	SessionMgr   *session.Manager
+	FileAccess   *files.Access
 	WebPassword  string
 	AllowedHosts []string
 }

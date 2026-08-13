@@ -39,6 +39,7 @@
 - [02 pigo 缺口与降级矩阵](issues/02-pigo-gap-and-degradation-matrix.md) — 8 个缺口；M1 可降级通过，M3 被图片/OAuth/package HTTP 阻塞
 - [03 SSE 事件映射与重连](issues/03-sse-event-mapping-and-replay.md) — 四类事件映射与 `internal/events` 转换层落地；after/Last-Event-ID 游标、30s 心跳；流式快照依赖 issue 04
 - [04 会话状态聚合器](issues/04-session-state-aggregator.md) — Go server 聚合 running/queued；`/api/agent/running` 与 running/events SSE 已落地
+- [05 文件访问安全与 files API](issues/05-file-access-parity.md) — F1 白名单 + `/api/files` 全类型 + 纯 Go docx preview 已落地
 - [13 OAuth 可行性研究](issues/13-oauth-feasibility-research.md) — 流程可纯 Go；pigo 仅静态 API key，OpenRouter 先试点，其余 gap
 - [14 skills/plugins 委托矩阵](issues/14-skills-plugins-delegation.md) — 14 项操作映射 Go-native/skills.sh/pigo CLI/unsupported-with-doc；双轨状态与无热 reload 是主要风险
 

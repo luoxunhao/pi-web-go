@@ -10,4 +10,8 @@
 
 ## Status
 
-open
+resolved
+
+## Answer
+
+已实现 `internal/files`：F1 白名单（realpath + Windows 大小写）、`/api/files` 的 list/read/download/meta/preview/watch/upload/upload-check，以及纯 Go docx preview。测试与 `go build` 通过。详见 `research/05-file-access-parity.md`。

@@ -36,6 +36,7 @@
 - `go build ./cmd/... ./internal/...`：通过
 - `cd frontend && npm run typecheck`：通过
 - `cd frontend && npm run build`：通过，产出 `frontend/dist`
+- 真实浏览器 E2E：headless Chrome 打开 `http://127.0.0.1:30142/`，DOM 渲染出 AppShell（title 变为 `oh-my-ash - Pi Web`），无 `Uncaught` 控制台错误；截图 `e2e-home.png`
 - 自动化覆盖：events 转换、cursor、session manager、files/docx、models proxy、auth/CORS/SSE、supervisor、export HTML
 
 ## 剩余风险

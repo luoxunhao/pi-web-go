@@ -26,8 +26,11 @@ func (h *sessionsHandler) list(w http.ResponseWriter, r *http.Request) {
 	out := make([]map[string]interface{}, 0, len(list.Sessions))
 	for _, s := range list.Sessions {
 		item := map[string]interface{}{
-			"id": s.SessionID, "cwd": s.Directory, "title": strPtrValue(s.Title),
-			"updatedAt": strPtrValue(s.UpdatedAt), "parentSessionId": strPtrValue(s.ParentSessionID),
+			"id": s.SessionID, "cwd": s.Directory, "name": strPtrValue(s.Title),
+			"title": strPtrValue(s.Title), "created": strPtrValue(s.UpdatedAt),
+			"modified": strPtrValue(s.UpdatedAt), "updatedAt": strPtrValue(s.UpdatedAt),
+			"parentSessionId": strPtrValue(s.ParentSessionID), "messageCount": 0,
+			"firstMessage": "", "transient": false,
 		}
 		out = append(out, item)
 	}

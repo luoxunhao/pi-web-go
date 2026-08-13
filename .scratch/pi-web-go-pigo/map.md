@@ -29,16 +29,19 @@
 - 文件白名单：F1 对齐 pi-web（会话 cwd/项目根/`~/pi-cwd-*`/显式 root + realpath），不自动放行 `$HOME`
 - 会话状态：T1 Go server 自己聚合 SSE 状态
 - 事件格式：M1 Go server 转换 pigo 事件为 pi-web 事件格式
+- [01 pi-web API 契约矩阵](issues/01-pi-web-api-contract-matrix.md) — 40 routes/53 handlers 映射完成；pigo 直代理与 Go-native 归属已定
 - slash 命令：C1 只暴露 pigo 支持的命令；缺失命令记录到对齐文档
 - 模型配置：R1 先代理 pigo config/providers/discover/test；OAuth 后置
 - skills/plugins：K1 委托 pigo CLI，外部搜索 Go 直连
 - OAuth：O1 先 API key；OAuth 可行性开 research
 - pigo 缺口：P1 记 pigo 侧 tickets，pi-web-go 先降级
 - 里程碑：M1 核心主链路；M2 工程能力；M3 生态能力
+- [02 pigo 缺口与降级矩阵](issues/02-pigo-gap-and-degradation-matrix.md) — 8 个缺口；M1 可降级通过，M3 被图片/OAuth/package HTTP 阻塞
+- [13 OAuth 可行性研究](issues/13-oauth-feasibility-research.md) — 流程可纯 Go；pigo 仅静态 API key，OpenRouter 先试点，其余 gap
+- [14 skills/plugins 委托矩阵](issues/14-skills-plugins-delegation.md) — 14 项操作映射 Go-native/skills.sh/pigo CLI/unsupported-with-doc；双轨状态与无热 reload 是主要风险
 
 ## Not yet specified
 
-- pigo OAuth token 存储可行性（依赖 OAuth research ticket）
 - export HTML 模板是否复用 pi SDK 样式（依赖 export ticket）
 - 发布形态是否捆绑 pigo 二进制（D1 后置，M3 收口）
 - app-update 的 Go 实现细节（npm registry 直连 vs pigo self-update）

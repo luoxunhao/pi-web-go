@@ -10,4 +10,8 @@
 
 ## Status
 
-open
+resolved
+
+## Answer
+
+共 8 个缺口（图片 prompt、status 硬编码、无 files HTTP API、package/skills 仅 CLI、OAuth 仅 API key、additionalDirectories/mcpServers 丢弃、prompt mode 忽略、运行中配置不热重载）。M1 在采用降级后不被阻塞；M3 全量 parity 被图片、OAuth、package/skills HTTP 阻塞。详见 `research/02-pigo-gap-and-degradation-matrix.md`，pigo 侧 ticket 清单已列在文件内。

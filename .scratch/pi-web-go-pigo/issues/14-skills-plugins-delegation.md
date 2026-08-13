@@ -10,4 +10,8 @@
 
 ## Status
 
-open
+resolved
+
+## Answer
+
+14 项 skills/plugins 操作已映射：Go-native 承担目录扫描/frontmatter/settings/disable-enable，skills.sh 直连承担搜索/下载/hash，pigo CLI 只负责 pigo 自有 npm 包生命周期，无法映射项 unsupported-with-doc。主要风险是 packages.json 与 settings.json/skills.sh lock 双轨状态、pigo serve 无热 reload、Windows extension 安装不支持。详见 `research/14-skills-plugins-delegation.md`。

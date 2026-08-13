@@ -98,6 +98,45 @@ func TestSecurityRequiresPassword(t *testing.T) {
 	}
 }
 
+func TestSSERequiresPassword(t *testing.T) {
+	deps := Dependencies{
+		PigoClient:  pigo.NewClient("http://127.0.0.1:1", ""),
+		Converter:   events.NewConverter(),
+		Cursor:      events.NewCursorStore(),
+		SessionMgr:  session.NewManager(time.Minute),
+		WebPassword: "secret",
+	}
+	router := NewRouter(deps)
+	req := httptest.NewRequest(http.MethodGet, "/api/agent/s1/events", nil)
+	req.Host = "127.0.0.1"
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401", rec.Code)
+	}
+}
+
+func TestCORSPreflight(t *testing.T) {
+	deps := Dependencies{
+		PigoClient: pigo.NewClient("http://127.0.0.1:1", ""),
+		Converter:  events.NewConverter(),
+		Cursor:     events.NewCursorStore(),
+		SessionMgr: session.NewManager(time.Minute),
+	}
+	router := NewRouter(deps)
+	req := httptest.NewRequest(http.MethodOptions, "/api/health", nil)
+	req.Host = "127.0.0.1"
+	req.Header.Set("Origin", "http://localhost:5173")
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want 204", rec.Code)
+	}
+	if rec.Header().Get("Access-Control-Allow-Origin") != "http://localhost:5173" {
+		t.Fatalf("CORS header = %q", rec.Header().Get("Access-Control-Allow-Origin"))
+	}
+}
+
 func TestRunningSnapshot(t *testing.T) {
 	mgr := session.NewManager(time.Minute)
 	mgr.MarkRunning("s1", "/work", "m1")

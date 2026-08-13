@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -19,6 +20,16 @@ func Security(password string, allowedHosts []string) func(http.Handler) http.Ha
 	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if origin := r.Header.Get("Origin"); origin != "" && loopbackOrigin(origin) {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Vary", "Origin")
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+				if r.Method == http.MethodOptions {
+					w.WriteHeader(http.StatusNoContent)
+					return
+				}
+			}
 			if !hostAllowed(r.Host, allow) {
 				http.Error(w, "Untrusted request", http.StatusForbidden)
 				return
@@ -31,6 +42,15 @@ func Security(password string, allowedHosts []string) func(http.Handler) http.Ha
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func loopbackOrigin(origin string) bool {
+	u, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+	hostname := u.Hostname()
+	return hostname == "127.0.0.1" || hostname == "localhost" || hostname == "::1"
 }
 
 func hostAllowed(host string, allow map[string]bool) bool {

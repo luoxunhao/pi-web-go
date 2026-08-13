@@ -10,4 +10,8 @@
 
 ## Status
 
-open
+resolved
+
+## Answer
+
+已实现统一 Basic Auth（用户 `pi`）、host 白名单（含 env 覆盖）、loopback CORS 和 SSE 认证测试；pigo 内部凭据由 supervisor 随机生成并走 Basic。详见 `research/09-auth-and-request-security.md`。

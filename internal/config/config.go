@@ -124,6 +124,9 @@ func applyEnv(cfg *Config) {
 	if v := os.Getenv("PI_WEB_GO_PASSWORD"); v != "" {
 		cfg.Web.Password = v
 	}
+	if v := os.Getenv("PI_WEB_GO_ALLOWED_HOSTS"); v != "" {
+		cfg.Web.AllowedHosts = strings.Split(v, ",")
+	}
 	if v := os.Getenv("PI_WEB_GO_FRONTEND_DIR"); v != "" {
 		cfg.Web.FrontendDir = v
 	}

@@ -10,4 +10,8 @@
 
 ## Status
 
-open
+resolved
+
+## Answer
+
+已实现 `internal/pigo/supervisor.go` 与 `cmd/server/main.go`：P2 托管、D1 PATH+配置覆盖、S1 随机密码、健康检查、崩溃重启、端口冲突报错、优雅退出。详见 `research/08-pigo-process-supervision.md`。

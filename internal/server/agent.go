@@ -11,13 +11,15 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/luoxunhao/pi-web-go/internal/files"
 	"github.com/luoxunhao/pi-web-go/internal/pigo"
 	"github.com/luoxunhao/pi-web-go/internal/session"
 )
 
 type agentHandler struct {
-	client   *pigo.Client
-	sessions *session.Manager
+	client     *pigo.Client
+	sessions   *session.Manager
+	fileAccess *files.Access
 }
 
 func (h *agentHandler) newSession(w http.ResponseWriter, r *http.Request) {
@@ -59,6 +61,9 @@ func (h *agentHandler) newSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.sessions.SetDirectory(created.SessionID, body.Cwd)
+	if h.fileAccess != nil {
+		_ = h.fileAccess.Add(body.Cwd)
+	}
 	if body.ThinkingLevel != "" {
 		_, _ = h.client.UpdateSessionConfig(r.Context(), created.SessionID, pigo.UpdateSessionRequest{
 			Directory: body.Cwd, ThinkingLevel: &body.ThinkingLevel,

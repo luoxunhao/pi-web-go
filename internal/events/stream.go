@@ -19,6 +19,9 @@ type StreamHandler struct {
 	Cursor    *CursorStore
 	Converter *Converter
 	Heartbeat time.Duration
+	// OnEvent, when set, receives every pigo domain event before conversion.
+	// It feeds stateful consumers such as the session state aggregator.
+	OnEvent func(pigo.DomainEvent)
 }
 
 type frameBatch struct {
@@ -80,6 +83,9 @@ func (h *StreamHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	errCh := make(chan error, 1)
 	go func() {
 		errCh <- h.Client.StreamEvents(ctx, sessionID, directory, after, types, func(ev pigo.DomainEvent) error {
+			if h.OnEvent != nil {
+				h.OnEvent(ev)
+			}
 			wire := h.Converter.Convert(ev)
 			if len(wire) == 0 {
 				return nil

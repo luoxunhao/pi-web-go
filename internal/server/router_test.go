@@ -9,9 +9,11 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/luoxunhao/pi-web-go/internal/events"
 	"github.com/luoxunhao/pi-web-go/internal/pigo"
+	"github.com/luoxunhao/pi-web-go/internal/session"
 )
 
 func TestAgentEventsSSEConversion(t *testing.T) {
@@ -40,6 +42,7 @@ func TestAgentEventsSSEConversion(t *testing.T) {
 		PigoClient: client,
 		Converter:  events.NewConverter(),
 		Cursor:     events.NewCursorStore(),
+		SessionMgr: session.NewManager(time.Minute),
 	}
 	router := NewRouter(deps)
 
@@ -74,6 +77,7 @@ func TestSecurityRequiresPassword(t *testing.T) {
 		PigoClient:  client,
 		Converter:   events.NewConverter(),
 		Cursor:      events.NewCursorStore(),
+		SessionMgr:  session.NewManager(time.Minute),
 		WebPassword: "secret",
 	}
 	router := NewRouter(deps)
@@ -91,6 +95,28 @@ func TestSecurityRequiresPassword(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200", rec.Code)
+	}
+}
+
+func TestRunningSnapshot(t *testing.T) {
+	mgr := session.NewManager(time.Minute)
+	mgr.MarkRunning("s1", "/work", "m1")
+	deps := Dependencies{
+		PigoClient: pigo.NewClient("http://127.0.0.1:1", ""),
+		Converter:  events.NewConverter(),
+		Cursor:     events.NewCursorStore(),
+		SessionMgr: mgr,
+	}
+	router := NewRouter(deps)
+	req := httptest.NewRequest(http.MethodGet, "/api/agent/running", nil)
+	req.Host = "127.0.0.1"
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), `"s1"`) {
+		t.Fatalf("body = %s", rec.Body.String())
 	}
 }
 

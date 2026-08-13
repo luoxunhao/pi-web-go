@@ -1,0 +1,27 @@
+# pi-web-go configuration. Agent-related settings (models/providers/modes)
+# are intentionally not here: they are owned by pigo and accessed through its
+# HTTP API.
+
+[server]
+port = 30141
+hostname = "127.0.0.1"
+
+[pigo]
+command = "pigo"
+args = ["serve"]
+host = "127.0.0.1"
+port = 4096
+auto_start = true
+# Optional override for the internal pigo password. When unset, a random
+# password is generated per process.
+# password = ""
+
+[web]
+# Optional browser password; prefer PI_WEB_GO_PASSWORD env var.
+# password = ""
+# Additional allowed request hosts, e.g. ["myhost.local"].
+allowed_hosts = []
+frontend_dir = "frontend/dist"
+
+[filesystem]
+allowed_roots = []

@@ -110,10 +110,12 @@ func applyEnv(cfg *Config) {
 	if v := os.Getenv("PIGO_PORT"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil {
 			cfg.Pigo.Port = n
+			cfg.Pigo.BaseURL = fmt.Sprintf("http://%s:%d", cfg.Pigo.Host, cfg.Pigo.Port)
 		}
 	}
 	if v := os.Getenv("PIGO_HOST"); v != "" {
 		cfg.Pigo.Host = v
+		cfg.Pigo.BaseURL = fmt.Sprintf("http://%s:%d", cfg.Pigo.Host, cfg.Pigo.Port)
 	}
 	if v := os.Getenv("PIGO_PASSWORD"); v != "" {
 		cfg.Pigo.Password = v

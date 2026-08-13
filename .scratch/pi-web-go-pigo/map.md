@@ -47,6 +47,7 @@
 - [10 Vite 前端迁移](issues/10-vite-frontend-migration.md) — upstream → Vite SPA 构建通过，Go 静态托管 + SPA fallback 已落地
 - [11 工程能力 Go 实现](issues/11-engineering-features-go.md) — session CRUD/context/state + git/worktrees/cwd/home/file-index/app-update 已落地
 - [12 export HTML 纯 Go 渲染](issues/12-export-html-go-renderer.md) — pigo messages → self-contained HTML 已落地
+- [15 里程碑验收与 E2E](issues/15-milestone-e2e-acceptance.md) — 验收清单/部署文档/冒烟测试完成；M3 真实登录依赖 pigo 侧能力
 - [13 OAuth 可行性研究](issues/13-oauth-feasibility-research.md) — 流程可纯 Go；pigo 仅静态 API key，OpenRouter 先试点，其余 gap
 - [14 skills/plugins 委托矩阵](issues/14-skills-plugins-delegation.md) — 14 项操作映射 Go-native/skills.sh/pigo CLI/unsupported-with-doc；双轨状态与无热 reload 是主要风险
 

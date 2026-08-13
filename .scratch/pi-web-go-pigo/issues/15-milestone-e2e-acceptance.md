@@ -10,4 +10,8 @@
 
 ## Status
 
-open
+resolved
+
+## Answer
+
+验收清单、部署文档、配置示例与 Makefile 已落地；Go 测试/构建、前端 typecheck/build、真实启动冒烟（health 200 + 静态首页 200）全部通过。M3 剩余 OAuth/skills 真实安装依赖 pigo 侧能力，已在 research 02/13/14 记录。详见 `research/15-milestone-e2e-acceptance.md`。

@@ -50,3 +50,15 @@ allowed_roots = ["C:/work"]
 		t.Fatalf("allowed roots = %#v", cfg.Filesystem.AllowedRoots)
 	}
 }
+
+func TestPigoPortEnvUpdatesBaseURL(t *testing.T) {
+	t.Setenv("PIGO_PORT", "14096")
+	t.Setenv("PIGO_HOST", "127.0.0.1")
+	cfg, err := Load("")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.Pigo.BaseURL != "http://127.0.0.1:14096" {
+		t.Fatalf("baseURL = %q, want http://127.0.0.1:14096", cfg.Pigo.BaseURL)
+	}
+}

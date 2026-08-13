@@ -53,6 +53,31 @@ func NewRouter(deps Dependencies) http.Handler {
 
 	if deps.FileAccess != nil {
 		r.Handle("/api/files/*", &files.Handler{Access: deps.FileAccess})
+		eh := &engineeringHandler{access: deps.FileAccess}
+		r.Get("/api/home", eh.home)
+		r.Get("/api/cwd/browse", eh.cwdBrowse)
+		r.Post("/api/cwd/validate", eh.cwdValidate)
+		r.Post("/api/default-cwd", eh.defaultCwd)
+		r.Get("/api/git/status", eh.gitStatus)
+		r.Get("/api/git/diff", eh.gitDiff)
+		r.Get("/api/worktrees", eh.worktrees)
+		r.Post("/api/worktrees", eh.worktreeAdd)
+		r.Delete("/api/worktrees", eh.worktreeRemove)
+		r.Get("/api/file-index", eh.fileIndex)
+		r.Get("/api/app-update", eh.appUpdate)
+	}
+	if deps.PigoClient != nil && deps.SessionMgr != nil {
+		sh := &sessionsHandler{client: deps.PigoClient, sessions: deps.SessionMgr}
+		r.Get("/api/sessions", sh.list)
+		r.Get("/api/sessions/{id}", sh.get)
+		r.Patch("/api/sessions/{id}", sh.patch)
+		r.Delete("/api/sessions/{id}", sh.delete)
+		r.Get("/api/sessions/{id}/context", sh.context)
+		r.Get("/api/sessions/{id}/state", sh.state)
+		r.Post("/api/sessions/{id}/auto-name", sh.autoName)
+	}
+	if deps.PigoClient != nil && deps.SessionMgr != nil && deps.FileAccess != nil {
+		r.Get("/api/agent/{id}/bash-output", (&engineeringHandler{access: deps.FileAccess}).bashOutput)
 	}
 	if deps.PigoClient != nil {
 		mh := &modelsHandler{client: deps.PigoClient}

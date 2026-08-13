@@ -10,4 +10,8 @@
 
 ## Status
 
-open
+resolved
+
+## Answer
+
+已实现 session CRUD/context/state/auto-name、home/cwd/git/worktrees/file-index/bash-output/app-update 的 Go 路由。详见 `research/11-engineering-features-go.md`。

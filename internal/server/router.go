@@ -75,6 +75,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Get("/api/sessions/{id}/context", sh.context)
 		r.Get("/api/sessions/{id}/state", sh.state)
 		r.Post("/api/sessions/{id}/auto-name", sh.autoName)
+		r.Get("/api/sessions/{id}/export", sh.exportHTML)
 	}
 	if deps.PigoClient != nil && deps.SessionMgr != nil && deps.FileAccess != nil {
 		r.Get("/api/agent/{id}/bash-output", (&engineeringHandler{access: deps.FileAccess}).bashOutput)

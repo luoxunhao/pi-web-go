@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/luoxunhao/pi-web-go/internal/export"
 	"github.com/luoxunhao/pi-web-go/internal/pigo"
 	"github.com/luoxunhao/pi-web-go/internal/session"
 )
@@ -157,6 +158,27 @@ func (h *sessionsHandler) autoName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	modelJSON(w, http.StatusOK, map[string]interface{}{"title": title, "usage": nil})
+}
+
+func (h *sessionsHandler) exportHTML(w http.ResponseWriter, r *http.Request) {
+	sessionID := chi.URLParam(r, "id")
+	directory := h.resolveDirectory(r.Context(), sessionID)
+	if directory == "" {
+		modelJSON(w, http.StatusNotFound, map[string]interface{}{"error": "Session not found"})
+		return
+	}
+	messages, err := h.client.GetMessages(r.Context(), sessionID, directory, "", 200)
+	if err != nil {
+		modelJSON(w, http.StatusBadGateway, map[string]interface{}{"error": err.Error()})
+		return
+	}
+	body := export.SessionHTML(sessionID, messages.Messages)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if r.URL.Query().Get("inline") != "1" {
+		w.Header().Set("Content-Disposition", `attachment; filename="`+sessionID+`.html"`)
+	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(body))
 }
 
 func (h *sessionsHandler) resolveDirectory(ctx context.Context, sessionID string) string {

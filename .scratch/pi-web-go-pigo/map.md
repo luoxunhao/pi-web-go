@@ -46,6 +46,7 @@
 - [09 认证与请求安全](issues/09-auth-and-request-security.md) — 统一 Basic Auth + host 白名单 + CORS 已落地
 - [10 Vite 前端迁移](issues/10-vite-frontend-migration.md) — upstream → Vite SPA 构建通过，Go 静态托管 + SPA fallback 已落地
 - [11 工程能力 Go 实现](issues/11-engineering-features-go.md) — session CRUD/context/state + git/worktrees/cwd/home/file-index/app-update 已落地
+- [12 export HTML 纯 Go 渲染](issues/12-export-html-go-renderer.md) — pigo messages → self-contained HTML 已落地
 - [13 OAuth 可行性研究](issues/13-oauth-feasibility-research.md) — 流程可纯 Go；pigo 仅静态 API key，OpenRouter 先试点，其余 gap
 - [14 skills/plugins 委托矩阵](issues/14-skills-plugins-delegation.md) — 14 项操作映射 Go-native/skills.sh/pigo CLI/unsupported-with-doc；双轨状态与无热 reload 是主要风险
 

@@ -10,4 +10,8 @@
 
 ## Status
 
-open
+resolved
+
+## Answer
+
+已实现 `internal/export` 纯 Go 会话 HTML 渲染与 `/api/sessions/{id}/export`（含 inline/attachment）。详见 `research/12-export-html-go-renderer.md`。

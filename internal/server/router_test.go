@@ -1,0 +1,118 @@
+package server
+
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/luoxunhao/pi-web-go/internal/events"
+	"github.com/luoxunhao/pi-web-go/internal/pigo"
+)
+
+func TestAgentEventsSSEConversion(t *testing.T) {
+	fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/events" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		frames := []string{
+			"id: 1\nevent: session.status\ndata: {\"id\":1,\"type\":\"session.status\",\"data\":{\"sessionId\":\"s1\",\"messageId\":\"m1\",\"status\":\"running\"}}\n\n",
+			"id: 2\nevent: message.part.delta\ndata: {\"id\":2,\"type\":\"message.part.delta\",\"data\":{\"sessionId\":\"s1\",\"messageId\":\"m1\",\"partId\":\"text\",\"delta\":\"hi\"}}\n\n",
+			"id: 3\nevent: session.status\ndata: {\"id\":3,\"type\":\"session.status\",\"data\":{\"sessionId\":\"s1\",\"messageId\":\"m1\",\"status\":\"idle\"}}\n\n",
+		}
+		for _, f := range frames {
+			_, _ = fmt.Fprint(w, f)
+			if f, ok := w.(http.Flusher); ok {
+				f.Flush()
+			}
+		}
+	}))
+	defer fake.Close()
+
+	client := pigo.NewClient(fake.URL, "")
+	deps := Dependencies{
+		PigoClient: client,
+		Converter:  events.NewConverter(),
+		Cursor:     events.NewCursorStore(),
+	}
+	router := NewRouter(deps)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/agent/s1/events", nil)
+	req.Host = "127.0.0.1"
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d", rec.Code)
+	}
+
+	body := rec.Body.String()
+	types := collectDataTypes(body)
+	want := []string{"agent_start", "message_start", "message_update", "agent_end", "prompt_done"}
+	for _, w := range want {
+		found := false
+		for _, got := range types {
+			if got == w {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("missing %q in events: %v", w, types)
+		}
+	}
+}
+
+func TestSecurityRequiresPassword(t *testing.T) {
+	client := pigo.NewClient("http://127.0.0.1:1", "")
+	deps := Dependencies{
+		PigoClient:  client,
+		Converter:   events.NewConverter(),
+		Cursor:      events.NewCursorStore(),
+		WebPassword: "secret",
+	}
+	router := NewRouter(deps)
+	req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
+	req.Host = "127.0.0.1"
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, want 401", rec.Code)
+	}
+
+	req.SetBasicAuth("pi", "secret")
+	req.Host = "127.0.0.1"
+	rec = httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200", rec.Code)
+	}
+}
+
+func collectDataTypes(body string) []string {
+	var types []string
+	scanner := bufio.NewScanner(strings.NewReader(body))
+	var data string
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, "data: ") {
+			data = strings.TrimPrefix(line, "data: ")
+		} else if line == "" && data != "" {
+			var ev map[string]interface{}
+			if err := json.Unmarshal([]byte(data), &ev); err == nil {
+				if typ, ok := ev["type"].(string); ok {
+					types = append(types, typ)
+				}
+			}
+			data = ""
+		}
+	}
+	return types
+}
+
+var _ io.Reader

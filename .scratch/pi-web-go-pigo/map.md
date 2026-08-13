@@ -37,6 +37,7 @@
 - pigo 缺口：P1 记 pigo 侧 tickets，pi-web-go 先降级
 - 里程碑：M1 核心主链路；M2 工程能力；M3 生态能力
 - [02 pigo 缺口与降级矩阵](issues/02-pigo-gap-and-degradation-matrix.md) — 8 个缺口；M1 可降级通过，M3 被图片/OAuth/package HTTP 阻塞
+- [03 SSE 事件映射与重连](issues/03-sse-event-mapping-and-replay.md) — 四类事件映射与 `internal/events` 转换层落地；after/Last-Event-ID 游标、30s 心跳；流式快照依赖 issue 04
 - [13 OAuth 可行性研究](issues/13-oauth-feasibility-research.md) — 流程可纯 Go；pigo 仅静态 API key，OpenRouter 先试点，其余 gap
 - [14 skills/plugins 委托矩阵](issues/14-skills-plugins-delegation.md) — 14 项操作映射 Go-native/skills.sh/pigo CLI/unsupported-with-doc；双轨状态与无热 reload 是主要风险
 

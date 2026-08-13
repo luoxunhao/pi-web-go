@@ -10,4 +10,8 @@
 
 ## Status
 
-open
+resolved
+
+## Answer
+
+已实现 `internal/server/agent.go`：`get_commands` 动态来自 pigo，prompt/abort/set_model/thinking/name/compact/fork/clone/navigate_tree 均映射到 pigo HTTP API；pi-web 独有命令显式 unsupported 并记录。详见 `research/07-slash-command-alignment.md`。

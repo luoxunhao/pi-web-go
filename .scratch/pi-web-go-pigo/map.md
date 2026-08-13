@@ -41,6 +41,7 @@
 - [04 会话状态聚合器](issues/04-session-state-aggregator.md) — Go server 聚合 running/queued；`/api/agent/running` 与 running/events SSE 已落地
 - [05 文件访问安全与 files API](issues/05-file-access-parity.md) — F1 白名单 + `/api/files` 全类型 + 纯 Go docx preview 已落地
 - [06 模型配置代理](issues/06-models-config-proxy.md) — models/models-config/api-key 全部代理 pigo，不读写 config.toml
+- [07 slash 命令对齐](issues/07-slash-command-alignment.md) — 动态命令目录 + `/command` 映射已落地；缺失命令记录 unsupported
 - [13 OAuth 可行性研究](issues/13-oauth-feasibility-research.md) — 流程可纯 Go；pigo 仅静态 API key，OpenRouter 先试点，其余 gap
 - [14 skills/plugins 委托矩阵](issues/14-skills-plugins-delegation.md) — 14 项操作映射 Go-native/skills.sh/pigo CLI/unsupported-with-doc；双轨状态与无热 reload 是主要风险
 

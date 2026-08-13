@@ -41,6 +41,13 @@ func NewRouter(deps Dependencies) http.Handler {
 	})
 	r.Get("/api/agent/running/events", runningEventsHandler(deps.SessionMgr))
 
+	if deps.PigoClient != nil && deps.SessionMgr != nil {
+		ah := &agentHandler{client: deps.PigoClient, sessions: deps.SessionMgr}
+		r.Post("/api/agent/new", ah.newSession)
+		r.Get("/api/agent/{id}", ah.get)
+		r.Post("/api/agent/{id}", ah.command)
+	}
+
 	if deps.FileAccess != nil {
 		r.Handle("/api/files/*", &files.Handler{Access: deps.FileAccess})
 	}

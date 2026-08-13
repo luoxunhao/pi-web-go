@@ -24,6 +24,7 @@ type State struct {
 type Manager struct {
 	mu          sync.Mutex
 	states      map[string]*State
+	directories map[string]string
 	subs        map[chan []string]struct{}
 	idleTimeout time.Duration
 }
@@ -34,9 +35,36 @@ func NewManager(idleTimeout time.Duration) *Manager {
 	}
 	return &Manager{
 		states:      make(map[string]*State),
+		directories: make(map[string]string),
 		subs:        make(map[chan []string]struct{}),
 		idleTimeout: idleTimeout,
 	}
+}
+
+// SetDirectory records the pigo directory for a session so later agent
+// commands can build pigo requests without re-deriving the cwd.
+func (m *Manager) SetDirectory(sessionID, directory string) {
+	if sessionID == "" || directory == "" {
+		return
+	}
+	m.mu.Lock()
+	m.directories[sessionID] = directory
+	if st, ok := m.states[sessionID]; ok {
+		st.Directory = directory
+	}
+	m.mu.Unlock()
+}
+
+func (m *Manager) Directory(sessionID string) string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if dir, ok := m.directories[sessionID]; ok {
+		return dir
+	}
+	if st, ok := m.states[sessionID]; ok {
+		return st.Directory
+	}
+	return ""
 }
 
 // ObserveEvent updates state from a pigo SSE domain event and publishes the
@@ -216,6 +244,7 @@ func (m *Manager) stateLocked(sessionID, directory string) *State {
 	}
 	if st.Directory == "" && directory != "" {
 		st.Directory = directory
+		m.directories[sessionID] = directory
 	}
 	return st
 }

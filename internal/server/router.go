@@ -69,7 +69,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Post("/api/project-trust", eh.projectTrustPost)
 	}
 	if deps.PigoClient != nil && deps.SessionMgr != nil {
-		sh := &sessionsHandler{client: deps.PigoClient, sessions: deps.SessionMgr}
+		sh := &sessionsHandler{client: deps.PigoClient, sessions: deps.SessionMgr, fileAccess: deps.FileAccess}
 		r.Get("/api/sessions", sh.list)
 		r.Get("/api/sessions/{id}", sh.get)
 		r.Patch("/api/sessions/{id}", sh.patch)

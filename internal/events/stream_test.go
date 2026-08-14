@@ -60,6 +60,7 @@ func TestStreamHandlerConnectedAndReplay(t *testing.T) {
 		`"isStreaming":false`,
 		"id: 9\n",
 		`"type":"agent_end"`,
+		`"type":"agent_settled"`,
 		`"type":"prompt_done"`,
 	} {
 		if !strings.Contains(body, want) {

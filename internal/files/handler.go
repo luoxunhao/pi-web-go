@@ -6,6 +6,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -46,6 +47,9 @@ type Handler struct {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	param := chi.URLParam(r, "*")
+	if decoded, err := url.PathUnescape(param); err == nil {
+		param = decoded
+	}
 	filePath := filePathFromParam(param)
 	if filePath == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "Path is required"})

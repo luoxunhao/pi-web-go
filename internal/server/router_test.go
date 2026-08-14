@@ -57,7 +57,7 @@ func TestAgentEventsSSEConversion(t *testing.T) {
 
 	body := rec.Body.String()
 	types := collectDataTypes(body)
-	want := []string{"agent_start", "message_start", "message_update", "agent_end", "prompt_done"}
+	want := []string{"agent_start", "message_start", "message_update", "agent_end", "agent_settled", "prompt_done"}
 	for _, w := range want {
 		found := false
 		for _, got := range types {
@@ -230,5 +230,133 @@ func TestProjectTrustGet(t *testing.T) {
 	json.NewDecoder(rec.Body).Decode(&resp)
 	if resp["trusted"] != false {
 		t.Fatalf("trusted = %v, want false", resp["trusted"])
+	}
+}
+
+func TestSessionListAllowsSessionDirectory(t *testing.T) {
+	dir := t.TempDir()
+	fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/session" {
+			http.NotFound(w, r)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"sessions": []map[string]interface{}{
+				{"sessionId": "s1", "directory": dir},
+			},
+		})
+	}))
+	defer fake.Close()
+
+	access := files.NewAccess(nil)
+	deps := Dependencies{
+		PigoClient: pigo.NewClient(fake.URL, ""),
+		Converter:  events.NewConverter(),
+		Cursor:     events.NewCursorStore(),
+		SessionMgr: session.NewManager(time.Minute),
+		FileAccess: access,
+	}
+	router := NewRouter(deps)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/sessions", nil)
+	req.Host = "127.0.0.1"
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("session list status = %d", rec.Code)
+	}
+	if !access.IsAllowed(dir) {
+		t.Fatal("session directory was not added to file access allow-list")
+	}
+	var listBody struct {
+		Sessions []map[string]interface{} `json:"sessions"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&listBody); err != nil {
+		t.Fatal(err)
+	}
+	if len(listBody.Sessions) != 1 {
+		t.Fatalf("sessions = %#v", listBody.Sessions)
+	}
+	wantRoot := strings.ReplaceAll(dir, "\\", "/")
+	if got := listBody.Sessions[0]["projectRoot"]; got != wantRoot {
+		t.Fatalf("projectRoot = %v, want %v", got, wantRoot)
+	}
+
+	encodedDir := strings.ReplaceAll(strings.ReplaceAll(dir, "\\", "/"), ":", "%3A")
+	req = httptest.NewRequest(http.MethodGet, "/api/files/"+encodedDir+"?type=list", nil)
+	req.Host = "127.0.0.1"
+	rec = httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("file list status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestContextFromMessagesNilUsesEmptyArray(t *testing.T) {
+	ctx := contextFromMessages(nil)
+	messages, ok := ctx["messages"].([]pigo.Message)
+	if !ok || messages == nil {
+		t.Fatalf("messages = %#v, want non-nil []pigo.Message", ctx["messages"])
+	}
+}
+
+func TestSessionGetIncludesModelContext(t *testing.T) {
+	dir := t.TempDir()
+	fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/load"):
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"sessionId": "s1", "directory": dir, "messages": []interface{}{}, "hasMore": false,
+			})
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/status"):
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"sessionId": "s1", "directory": dir, "model": "agnes-2.5-flash", "thinkingLevel": "medium",
+			})
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/config/providers"):
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"defaultModel": "openai/agnes-2.5-flash",
+				"providers": []map[string]interface{}{
+					{"id": "openai", "name": "OpenAI", "models": []map[string]interface{}{
+						{"provider": "openai", "modelId": "agnes-2.5-flash"},
+					}},
+				},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer fake.Close()
+
+	mgr := session.NewManager(time.Minute)
+	mgr.SetDirectory("s1", dir)
+	deps := Dependencies{
+		PigoClient: pigo.NewClient(fake.URL, ""),
+		Converter:  events.NewConverter(),
+		Cursor:     events.NewCursorStore(),
+		SessionMgr: mgr,
+	}
+	router := NewRouter(deps)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/sessions/s1", nil)
+	req.Host = "127.0.0.1"
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	var body struct {
+		Context struct {
+			Model         map[string]interface{} `json:"model"`
+			ThinkingLevel string                 `json:"thinkingLevel"`
+		} `json:"context"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+		t.Fatal(err)
+	}
+	if body.Context.Model["provider"] != "openai" || body.Context.Model["modelId"] != "agnes-2.5-flash" {
+		t.Fatalf("model = %#v", body.Context.Model)
+	}
+	if body.Context.ThinkingLevel != "medium" {
+		t.Fatalf("thinkingLevel = %q", body.Context.ThinkingLevel)
 	}
 }

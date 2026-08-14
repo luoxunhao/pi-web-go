@@ -37,7 +37,7 @@ export function extractTurnWrittenFiles(
 
   for (const block of content) {
     if (block.type !== "toolCall") continue;
-    if (!isFileWritingToolName(block.toolName)) continue;
+    if (!block.toolName || !isFileWritingToolName(block.toolName)) continue;
 
     // No result yet (still streaming) or the call failed — nothing was written.
     const result = toolResults?.get(block.toolCallId);

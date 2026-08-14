@@ -135,3 +135,10 @@ test("returns an empty array for an empty or text-only turn", () => {
   assert.deepEqual(paths([], results()), []);
   assert.deepEqual(paths([{ type: "text", text: "hi" }], results()), []);
 });
+
+test("skips toolCall blocks missing toolName without crashing", () => {
+  const content = [
+    { type: "toolCall", toolCallId: "1", input: { file_path: "/abs/a.txt" } },
+  ];
+  assert.deepEqual(paths(content, results(okResult("1"))), []);
+});

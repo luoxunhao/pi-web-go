@@ -4,17 +4,20 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/luoxunhao/pi-web-go/internal/export"
+	"github.com/luoxunhao/pi-web-go/internal/files"
 	"github.com/luoxunhao/pi-web-go/internal/pigo"
 	"github.com/luoxunhao/pi-web-go/internal/session"
 )
 
 type sessionsHandler struct {
-	client   *pigo.Client
-	sessions *session.Manager
+	client     *pigo.Client
+	sessions   *session.Manager
+	fileAccess *files.Access
 }
 
 func (h *sessionsHandler) list(w http.ResponseWriter, r *http.Request) {
@@ -25,12 +28,14 @@ func (h *sessionsHandler) list(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]map[string]interface{}, 0, len(list.Sessions))
 	for _, s := range list.Sessions {
+		h.allowDirectory(s.Directory)
 		item := map[string]interface{}{
 			"id": s.SessionID, "cwd": s.Directory, "name": strPtrValue(s.Title),
 			"title": strPtrValue(s.Title), "created": strPtrValue(s.UpdatedAt),
 			"modified": strPtrValue(s.UpdatedAt), "updatedAt": strPtrValue(s.UpdatedAt),
 			"parentSessionId": strPtrValue(s.ParentSessionID), "messageCount": 0,
 			"firstMessage": "", "transient": false,
+			"projectRoot": sessionProjectRoot(s.Directory),
 		}
 		out = append(out, item)
 	}
@@ -56,13 +61,23 @@ func (h *sessionsHandler) get(w http.ResponseWriter, r *http.Request) {
 		modelJSON(w, http.StatusNotFound, map[string]interface{}{"error": err.Error()})
 		return
 	}
+	status, _ := h.client.GetSessionStatus(r.Context(), sessionID, directory)
+	context := contextFromMessages(load.Messages)
+	if status.Model != nil {
+		context["model"] = sessionModelContext(r.Context(), h.client, *status.Model)
+	} else {
+		context["model"] = nil
+	}
+	if status.ThinkingLevel != nil {
+		context["thinkingLevel"] = *status.ThinkingLevel
+	}
 	info := map[string]interface{}{
 		"id": sessionID, "cwd": directory, "name": "", "created": "", "modified": strPtrValue(load.NextCursor),
 		"messageCount": len(load.Messages), "firstMessage": firstUserMessage(load.Messages), "transient": false,
 	}
 	modelJSON(w, http.StatusOK, map[string]interface{}{
 		"sessionId": sessionID, "filePath": "", "info": info, "leafId": strPtrValue(load.CurrentLeafID),
-		"tree": map[string]interface{}{}, "context": contextFromMessages(load.Messages), "totalActiveMs": 0,
+		"tree": []interface{}{}, "context": context, "totalActiveMs": 0,
 	})
 }
 
@@ -199,10 +214,44 @@ func (h *sessionsHandler) resolveDirectory(ctx context.Context, sessionID string
 			if h.sessions != nil {
 				h.sessions.SetDirectory(sessionID, s.Directory)
 			}
+			h.allowDirectory(s.Directory)
 			return s.Directory
 		}
 	}
 	return ""
+}
+
+func (h *sessionsHandler) allowDirectory(dir string) {
+	if dir != "" && h.fileAccess != nil {
+		_ = h.fileAccess.Add(dir)
+	}
+}
+
+func sessionProjectRoot(cwd string) string {
+	if cwd == "" {
+		return ""
+	}
+	root, err := gitOutput(cwd, "rev-parse", "--show-toplevel")
+	if err == nil && strings.TrimSpace(root) != "" {
+		return strings.TrimSpace(root)
+	}
+	return filepath.ToSlash(filepath.Clean(cwd))
+}
+
+func sessionModelContext(ctx context.Context, client *pigo.Client, model string) map[string]interface{} {
+	provider, modelID := splitModelID(model)
+	if provider == "" {
+		if providers, err := client.ListProviders(ctx); err == nil {
+			for _, p := range providers.Providers {
+				for _, m := range p.Models {
+					if m.ModelID == modelID {
+						return map[string]interface{}{"provider": p.ID, "modelId": m.ModelID}
+					}
+				}
+			}
+		}
+	}
+	return map[string]interface{}{"provider": provider, "modelId": modelID}
 }
 
 func firstUserMessage(messages []pigo.Message) string {
@@ -229,6 +278,9 @@ func truncate(s string, max int) string {
 }
 
 func contextFromMessages(messages []pigo.Message) map[string]interface{} {
+	if messages == nil {
+		messages = []pigo.Message{}
+	}
 	entryIDs := make([]interface{}, 0, len(messages))
 	for _, m := range messages {
 		if m.EntryID != nil {

@@ -90,7 +90,7 @@ func TestConvertStatusLifecycle(t *testing.T) {
 	idle := c.Convert(pigo.DomainEvent{Type: "session.status", Data: map[string]interface{}{
 		"sessionId": "s1", "messageId": "m1", "status": "idle",
 	}})
-	if len(idle) != 2 || idle[0]["type"] != "agent_end" || idle[1]["type"] != "prompt_done" {
+	if len(idle) != 3 || idle[0]["type"] != "agent_end" || idle[1]["type"] != "agent_settled" || idle[2]["type"] != "prompt_done" {
 		t.Fatalf("idle = %#v", idle)
 	}
 }

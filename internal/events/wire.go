@@ -127,10 +127,13 @@ func (c *Converter) convertStatus(sessionID string, data map[string]interface{})
 		return []WireEvent{{"type": "agent_start"}}
 	case "idle":
 		c.clear(sessionID)
-		return []WireEvent{{"type": "agent_end"}, {"type": "prompt_done"}}
+		// Match pi SDK terminal order: agent_settled clears the streaming flag
+		// before prompt_done, so the web UI settles immediately.
+		return []WireEvent{{"type": "agent_end"}, {"type": "agent_settled"}, {"type": "prompt_done"}}
 	case "cancelled":
 		c.clear(sessionID)
-		return []WireEvent{{"type": "agent_end"}, {"type": "prompt_done"}}
+		// Same terminal order for aborted turns.
+		return []WireEvent{{"type": "agent_end"}, {"type": "agent_settled"}, {"type": "prompt_done"}}
 	case "error":
 		wire := WireEvent{"type": "prompt_error"}
 		if msg, ok := data["error"].(string); ok {

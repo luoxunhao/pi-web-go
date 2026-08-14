@@ -39,7 +39,7 @@ func (h *modelsHandler) listModels(w http.ResponseWriter, r *http.Request) {
 	thinkingLevels := map[string]interface{}{}
 	for _, p := range providers.Providers {
 		for _, m := range p.Models {
-			id := modelID(p.ID, m.ModelID)
+			id := m.ModelID
 			name := m.Name
 			if name == "" {
 				name = m.ModelID
@@ -325,7 +325,7 @@ func modelID(provider, model string) string {
 func splitModelID(id string) (string, string) {
 	provider, model, ok := strings.Cut(id, "/")
 	if !ok {
-		return "", ""
+		return "", id
 	}
 	return provider, model
 }

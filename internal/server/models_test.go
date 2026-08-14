@@ -49,6 +49,9 @@ func TestModelsProxy(t *testing.T) {
 	if len(body.ModelList) != 1 {
 		t.Fatalf("modelList = %#v", body.ModelList)
 	}
+	if body.ModelList[0]["id"] != "free" {
+		t.Fatalf("modelList[0].id = %v, want free", body.ModelList[0]["id"])
+	}
 	if body.Default["provider"] != "openrouter" {
 		t.Fatalf("default = %#v", body.Default)
 	}

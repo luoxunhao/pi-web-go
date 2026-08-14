@@ -2,6 +2,7 @@ frontend/node_modules/
 frontend/dist/
 bin/
 *.exe
+config.toml
 .idea/
 .vscode/
 *.log

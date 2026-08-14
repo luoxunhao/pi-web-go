@@ -53,7 +53,7 @@ func NewRouter(deps Dependencies) http.Handler {
 
 	if deps.FileAccess != nil {
 		r.Handle("/api/files/*", &files.Handler{Access: deps.FileAccess})
-		eh := &engineeringHandler{access: deps.FileAccess}
+		eh := &engineeringHandler{access: deps.FileAccess, pigoClient: deps.PigoClient}
 		r.Get("/api/home", eh.home)
 		r.Get("/api/cwd/browse", eh.cwdBrowse)
 		r.Post("/api/cwd/validate", eh.cwdValidate)
@@ -65,6 +65,8 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Delete("/api/worktrees", eh.worktreeRemove)
 		r.Get("/api/file-index", eh.fileIndex)
 		r.Get("/api/app-update", eh.appUpdate)
+		r.Get("/api/project-trust", eh.projectTrustGet)
+		r.Post("/api/project-trust", eh.projectTrustPost)
 	}
 	if deps.PigoClient != nil && deps.SessionMgr != nil {
 		sh := &sessionsHandler{client: deps.PigoClient, sessions: deps.SessionMgr}

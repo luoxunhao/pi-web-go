@@ -19,6 +19,40 @@ func TestLoadDefaults(t *testing.T) {
 	}
 }
 
+func TestLoadAutoFindsConfigToml(t *testing.T) {
+	dir := t.TempDir()
+	content := `
+[server]
+port = 3100
+hostname = "localhost"
+
+[web]
+allowed_hosts = ["127.0.0.1"]
+`
+	cfgPath := filepath.Join(dir, "config.toml")
+	if err := os.WriteFile(cfgPath, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// Change into dir and call Load("") — it should find config.toml automatically
+	oldPwd, _ := os.Getwd()
+	os.Chdir(dir)
+	defer os.Chdir(oldPwd)
+
+	cfg, err := Load("")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.Server.Port != 3100 {
+		t.Fatalf("port = %d, want 3100", cfg.Server.Port)
+	}
+	if cfg.Server.Hostname != "localhost" {
+		t.Fatalf("hostname = %q, want localhost", cfg.Server.Hostname)
+	}
+	if len(cfg.Web.AllowedHosts) != 1 || cfg.Web.AllowedHosts[0] != "127.0.0.1" {
+		t.Fatalf("allowed_hosts = %#v", cfg.Web.AllowedHosts)
+	}
+}
+
 func TestLoadFileAndEnv(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.toml")

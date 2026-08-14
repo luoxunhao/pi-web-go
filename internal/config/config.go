@@ -76,9 +76,15 @@ func Default() Config {
 }
 
 // Load reads config.toml when present, applies environment overrides, and
-// validates the result.
+// validates the result. When path is empty, it looks for config.toml in the
+// current working directory before falling back to built-in defaults.
 func Load(path string) (*Config, error) {
 	cfg := Default()
+	if path == "" {
+		if _, err := os.Stat("config.toml"); err == nil {
+			path = "config.toml"
+		}
+	}
 	if path != "" {
 		if _, err := os.Stat(path); err == nil {
 			if _, err := toml.DecodeFile(path, &cfg); err != nil {

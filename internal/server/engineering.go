@@ -12,10 +12,12 @@ import (
 	"time"
 
 	"github.com/luoxunhao/pi-web-go/internal/files"
+	"github.com/luoxunhao/pi-web-go/internal/pigo"
 )
 
 type engineeringHandler struct {
-	access *files.Access
+	access     *files.Access
+	pigoClient *pigo.Client
 }
 
 func (h *engineeringHandler) home(w http.ResponseWriter, _ *http.Request) {
@@ -314,6 +316,63 @@ func (h *engineeringHandler) appUpdate(w http.ResponseWriter, r *http.Request) {
 		"releaseUrl":      "https://github.com/agegr/pi-web/releases/tag/v" + body.Version,
 	})
 }
+
+func (h *engineeringHandler) projectTrustGet(w http.ResponseWriter, r *http.Request) {
+	cwd := r.URL.Query().Get("cwd")
+	if strings.TrimSpace(cwd) == "" {
+		modelJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "cwd is required"})
+		return
+	}
+	if h.access != nil && !h.access.IsAllowed(cwd) {
+		modelJSON(w, http.StatusForbidden, map[string]interface{}{"error": "Access denied"})
+		return
+	}
+	trusted := false
+	requireTrust := false
+	if h.pigoClient != nil {
+		result, err := h.pigoClient.ListTrust(r.Context())
+		if err == nil {
+			for _, e := range result.Entries {
+				if filepath.Clean(e.Path) == filepath.Clean(cwd) && e.Trust != nil && *e.Trust {
+					trusted = true
+					break
+				}
+			}
+			// requiresTrust is only meaningful when trust info is available
+			requireTrust = trusted
+		}
+	}
+	modelJSON(w, http.StatusOK, map[string]interface{}{
+		"requiresTrust": requireTrust,
+		"trusted":       trusted,
+	})
+}
+
+func (h *engineeringHandler) projectTrustPost(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Cwd string `json:"cwd"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || strings.TrimSpace(body.Cwd) == "" {
+		modelJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "cwd is required"})
+		return
+	}
+	cwd := body.Cwd
+	if h.access != nil && !h.access.IsAllowed(cwd) {
+		modelJSON(w, http.StatusForbidden, map[string]interface{}{"error": "Access denied"})
+		return
+	}
+	if h.pigoClient == nil {
+		modelJSON(w, http.StatusServiceUnavailable, map[string]interface{}{"error": "Agent client not available"})
+		return
+	}
+	if err := h.pigoClient.SetTrust(r.Context(), pigo.SetTrustRequest{Path: cwd, Trust: boolPtr(true)}); err != nil {
+		modelJSON(w, http.StatusInternalServerError, map[string]interface{}{"error": err.Error()})
+		return
+	}
+	modelJSON(w, http.StatusOK, map[string]interface{}{"requiresTrust": true, "trusted": true})
+}
+
+func boolPtr(b bool) *bool { return &b }
 
 func (h *engineeringHandler) allowCwd(w http.ResponseWriter, cwd string) bool {
 	if cwd == "" {

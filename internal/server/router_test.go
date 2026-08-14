@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/luoxunhao/pi-web-go/internal/events"
+	"github.com/luoxunhao/pi-web-go/internal/files"
 	"github.com/luoxunhao/pi-web-go/internal/pigo"
 	"github.com/luoxunhao/pi-web-go/internal/session"
 )
@@ -181,3 +182,53 @@ func collectDataTypes(body string) []string {
 }
 
 var _ io.Reader
+
+func TestProjectTrustGet(t *testing.T) {
+	client := pigo.NewClient("http://127.0.0.1:1", "")
+	access := files.NewAccess([]string{"/tmp"})
+	deps := Dependencies{
+		PigoClient:   client,
+		Converter:    events.NewConverter(),
+		Cursor:       events.NewCursorStore(),
+		SessionMgr:   session.NewManager(time.Minute),
+		FileAccess:   access,
+		AllowedHosts: []string{"localhost", "127.0.0.1", "localhost:5173", "127.0.0.1:5173"},
+	}
+	router := NewRouter(deps)
+
+	// Missing cwd -> 400
+	req := httptest.NewRequest(http.MethodGet, "/api/project-trust", nil)
+	req.Host = "localhost:5173"
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("missing cwd: status = %d", rec.Code)
+	}
+
+	// Vite proxy origin on port 5173 should now be allowed
+	req = httptest.NewRequest(http.MethodGet, "/api/project-trust?cwd=/tmp", nil)
+	req.Host = "localhost:5173"
+	req.Header.Set("Origin", "http://localhost:5173")
+	rec = httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("vite proxy host: status = %d, want 200", rec.Code)
+	}
+	if rec.Header().Get("Access-Control-Allow-Origin") != "http://localhost:5173" {
+		t.Fatalf("CORS header = %q", rec.Header().Get("Access-Control-Allow-Origin"))
+	}
+
+	// Valid cwd, no pigo client -> returns trusted=false, requiresTrust=false
+	req = httptest.NewRequest(http.MethodGet, "/api/project-trust?cwd=/tmp", nil)
+	req.Host = "localhost:5173"
+	rec = httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	var resp map[string]interface{}
+	json.NewDecoder(rec.Body).Decode(&resp)
+	if resp["trusted"] != false {
+		t.Fatalf("trusted = %v, want false", resp["trusted"])
+	}
+}

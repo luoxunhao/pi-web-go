@@ -62,7 +62,14 @@ func hostAllowed(host string, allow map[string]bool) bool {
 	if len(allow) == 0 {
 		return hostname == "127.0.0.1" || hostname == "localhost" || hostname == "::1"
 	}
-	return allow[hostname]
+	// Check both bare hostname and host:port (e.g. "localhost" and "localhost:5173")
+	if allow[hostname] {
+		return true
+	}
+	if _, port, err := net.SplitHostPort(host); err == nil {
+		return allow[hostname+":"+port]
+	}
+	return false
 }
 
 func validBasicAuth(header, password string) bool {

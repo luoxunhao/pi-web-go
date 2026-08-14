@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -27,11 +28,19 @@ func (h *engineeringHandler) home(w http.ResponseWriter, _ *http.Request) {
 
 func (h *engineeringHandler) cwdBrowse(w http.ResponseWriter, r *http.Request) {
 	requested := strings.TrimSpace(r.URL.Query().Get("path"))
-	start := requested
-	if start == "" || start == "~" {
+	// Windows: no path → drive picker, matching pi-web's contract.
+	if requested == "" || requested == "~" {
+		if runtime.GOOS == "windows" {
+			modelJSON(w, http.StatusOK, map[string]interface{}{
+				"path": "", "parentPath": "", "directories": []interface{}{}, "drives": listDrives(),
+			})
+			return
+		}
 		home, _ := os.UserHomeDir()
-		start = home
-	} else if strings.HasPrefix(start, "~/") {
+		requested = home
+	}
+	start := requested
+	if strings.HasPrefix(start, "~/") {
 		home, _ := os.UserHomeDir()
 		start = filepath.Join(home, strings.TrimPrefix(start, "~/"))
 	}
@@ -45,20 +54,34 @@ func (h *engineeringHandler) cwdBrowse(w http.ResponseWriter, r *http.Request) {
 		modelJSON(w, http.StatusInternalServerError, map[string]interface{}{"error": err.Error()})
 		return
 	}
-	dirs := make([]string, 0, len(entries))
+	// pi-web contract: directories are {name, path} objects, not plain names.
+	dirs := make([]map[string]string, 0, len(entries))
 	for _, e := range entries {
 		if e.IsDir() {
-			dirs = append(dirs, e.Name())
+			dirs = append(dirs, map[string]string{"name": e.Name(), "path": filepath.Join(start, e.Name())})
 		}
 	}
-	sort.Strings(dirs)
+	sort.Slice(dirs, func(i, j int) bool { return dirs[i]["name"] < dirs[j]["name"] })
 	parent := filepath.Dir(start)
 	if filepath.Clean(parent) == filepath.Clean(start) {
 		parent = ""
 	}
+	// A drive root (e.g. E:\) is a normal directory listing; parentPath ""
+	// means the back button falls back to the drive picker (no path → drives).
 	modelJSON(w, http.StatusOK, map[string]interface{}{
 		"path": start, "parentPath": parent, "directories": dirs,
 	})
+}
+
+func listDrives() []map[string]string {
+	drives := make([]map[string]string, 0, 26)
+	for _, l := range "ABCDEFGHIJKLMNOPQRSTUVWXYZ" {
+		root := string(l) + ":\\"
+		if _, err := os.Stat(root); err == nil {
+			drives = append(drives, map[string]string{"name": string(l) + ":", "path": root})
+		}
+	}
+	return drives
 }
 
 func (h *engineeringHandler) cwdValidate(w http.ResponseWriter, r *http.Request) {

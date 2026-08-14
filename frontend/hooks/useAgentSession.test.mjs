@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const source = await readFile(new URL("./useAgentSession.ts", import.meta.url), "utf8");
-const chatWindowSource = await readFile(new URL("../components/ChatWindow.tsx", import.meta.url), "utf8");
-const chatInputSource = await readFile(new URL("../components/ChatInput.tsx", import.meta.url), "utf8");
-const appShellSource = await readFile(new URL("../components/AppShell.tsx", import.meta.url), "utf8");
+const source = (await readFile(new URL("./useAgentSession.ts", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
+const chatWindowSource = (await readFile(new URL("../components/ChatWindow.tsx", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
+const chatInputSource = (await readFile(new URL("../components/ChatInput.tsx", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
+const appShellSource = (await readFile(new URL("../components/AppShell.tsx", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
 
 test("keeps the session event stream open through the idle grace window", () => {
   const finishSource = source.slice(
@@ -84,7 +84,7 @@ test("opening System lazily starts a dormant session without sending a prompt", 
   assert.doesNotMatch(loadSystemPromptSource, /promoteNewSession\(\)/);
   assert.match(loadSystemPromptSource, /sendAgentCommand<AgentStateResponse>\(sid, \{ type: "get_state" \}\)/);
   assert.doesNotMatch(loadSystemPromptSource, /type: "prompt"/);
-  assert.match(loadSystemPromptSource, /setSystemPrompt\(state\.systemPrompt \?\? ""\)/);
+  assert.match(loadSystemPromptSource, /setSystemPrompt\(state\.systemPrompt \?\? null\)/);
   assert.match(loaderEffectSource, /onSystemPromptLoaderChange\?\.\(loadSystemPrompt\)/);
   assert.match(loaderEffectSource, /onSystemPromptLoaderChange\?\.\(null\)/);
   assert.match(appShellSource, /onClick=\{\(\) => handleSystemPromptToggle\(mobile\)\}/);
@@ -433,4 +433,18 @@ test("keeps a detached viewport in place when streaming completes", () => {
   assert.match(scrollEffectSource, /!agentRunningRef\.current && isNearBottomRef\.current[\s\S]*?scrollToBottom\("auto"\)/);
   assert.doesNotMatch(scrollEffectSource, /\|\|/);
   assert.match(source, /addEventListener\("scroll", handleScrollPositionChange/);
+});
+
+test("normalizes persisted pigo toolCall blocks before rendering", () => {
+  const loadSource = source.slice(
+    source.indexOf("const loadSession = useCallback"),
+    source.indexOf("const loadContext = useCallback"),
+  );
+  const contextSource = source.slice(
+    source.indexOf("const loadContext = useCallback"),
+    source.indexOf("const loadTools = useCallback"),
+  );
+
+  assert.match(loadSource, /setMessages\(persistedMessages\.map\(normalizeToolCalls\)\)/);
+  assert.match(contextSource, /setMessages\(d\.context\.messages\.map\(normalizeToolCalls\)\)/);
 });

@@ -480,7 +480,7 @@ export function useAgentSession(opts: UseAgentSessionOptions) {
       const persistedMessages = d.context.messages;
       setData(d);
       setActiveLeafId(d.leafId);
-      setMessages(persistedMessages);
+      setMessages(persistedMessages.map(normalizeToolCalls));
       setEntryIds(d.context.entryIds ?? []);
       setCurrentModelOverride((current) => modelSwitchPendingRef.current ? current : null);
       setError(null);
@@ -530,7 +530,7 @@ export function useAgentSession(opts: UseAgentSessionOptions) {
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const d = await res.json() as { context: { messages: AgentMessage[]; entryIds: string[] } };
-      setMessages(d.context.messages);
+      setMessages(d.context.messages.map(normalizeToolCalls));
       setEntryIds(d.context.entryIds ?? []);
     } catch (e) {
       console.error("Failed to load context:", e);
@@ -637,7 +637,10 @@ export function useAgentSession(opts: UseAgentSessionOptions) {
 
     const state = await sendAgentCommand<AgentStateResponse>(sid, { type: "get_state" });
     if (!sessionHookMountedRef.current || sessionIdRef.current !== sid) return;
-    setSystemPrompt(state.systemPrompt ?? "");
+    // null (pigo exposes no systemPrompt) keeps the "load" state visible
+    // instead of falsely reporting tools disabled; only a real "" from the
+    // client-side force-empty path means "tools are disabled".
+    setSystemPrompt(state.systemPrompt ?? null);
   }, [ensureNewSession]);
 
   const loadSlashCommands = useCallback(async () => {

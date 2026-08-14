@@ -95,7 +95,7 @@ func (h *agentHandler) get(w http.ResponseWriter, r *http.Request) {
 		"isBashRunning": false, "isCompacting": false, "queuedMessages": map[string]interface{}{
 			"steering": []interface{}{}, "followUp": []interface{}{},
 		},
-		"contextUsage": nil, "systemPrompt": "",
+		"contextUsage": nil, "systemPrompt": nil,
 	}
 	if !running {
 		agentJSON(w, http.StatusOK, map[string]interface{}{"running": false})
@@ -160,7 +160,7 @@ func (h *agentHandler) command(w http.ResponseWriter, r *http.Request) {
 			"sessionId": sessionID, "isStreaming": h.sessions != nil && containsString(h.sessions.RunningIDs(), sessionID),
 			"isPromptRunning": false, "isBashRunning": false, "isCompacting": false,
 			"queuedMessages": map[string]interface{}{"steering": []interface{}{}, "followUp": []interface{}{}},
-			"contextUsage":   nil, "systemPrompt": "",
+			"contextUsage":   nil, "systemPrompt": nil,
 			"model":         map[string]interface{}{"provider": providerOf(status.Model), "modelId": modelOf(status.Model)},
 			"thinkingLevel": strPtrValue(status.ThinkingLevel),
 		}})

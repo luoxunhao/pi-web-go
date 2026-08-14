@@ -123,6 +123,9 @@ func (s *Supervisor) spawn() error {
 	cmd := exec.Command(s.cfg.Command, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	if s.cfg.DataDir != "" {
+		cmd.Env = append(os.Environ(), "PIGO_HOME="+s.cfg.DataDir)
+	}
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start pigo: %w", err)
 	}

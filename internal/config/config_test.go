@@ -85,6 +85,29 @@ allowed_roots = ["C:/work"]
 	}
 }
 
+func TestLoadDataDirResolvesToAbsolute(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	content := `
+[pigo]
+data_dir = "bin"
+`
+	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	oldPwd, _ := os.Getwd()
+	os.Chdir(dir)
+	defer os.Chdir(oldPwd)
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.Pigo.DataDir != filepath.Join(dir, "bin") {
+		t.Fatalf("data_dir = %q, want %q", cfg.Pigo.DataDir, filepath.Join(dir, "bin"))
+	}
+}
+
 func TestPigoPortEnvUpdatesBaseURL(t *testing.T) {
 	t.Setenv("PIGO_PORT", "14096")
 	t.Setenv("PIGO_HOST", "127.0.0.1")

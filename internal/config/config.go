@@ -41,6 +41,9 @@ type PigoConfig struct {
 	Port      int      `toml:"port"`
 	Password  string   `toml:"password"`
 	AutoStart bool     `toml:"auto_start"`
+	// DataDir isolates this pigo instance's data (sessions.db, memory, ...)
+	// from other pigo/pi processes; injected as PIGO_HOME when spawning.
+	DataDir string `toml:"data_dir"`
 }
 
 type FilesystemConfig struct {
@@ -64,7 +67,7 @@ func Default() Config {
 		Pigo: PigoConfig{
 			Command:   "pigo",
 			Args:      []string{"serve"},
-			BaseURL:   fmt.Sprintf("http://%s:%d", DefaultPigoHost, DefaultPigoPort),
+			BaseURL:   "", // filled by validate() from host:port so a [pigo] port override cannot leave a stale default
 			Host:      DefaultPigoHost,
 			Port:      DefaultPigoPort,
 			AutoStart: true,
@@ -149,6 +152,13 @@ func validate(cfg *Config) error {
 	}
 	if cfg.Pigo.BaseURL == "" {
 		cfg.Pigo.BaseURL = fmt.Sprintf("http://%s:%d", cfg.Pigo.Host, cfg.Pigo.Port)
+	}
+	if !filepath.IsAbs(cfg.Pigo.DataDir) && cfg.Pigo.DataDir != "" {
+		abs, err := filepath.Abs(cfg.Pigo.DataDir)
+		if err != nil {
+			return fmt.Errorf("resolve pigo.data_dir: %w", err)
+		}
+		cfg.Pigo.DataDir = abs
 	}
 	if cfg.Web.FrontendDir == "" {
 		cfg.Web.FrontendDir = "frontend/dist"

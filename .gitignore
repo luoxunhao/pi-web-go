@@ -3,6 +3,7 @@ frontend/dist/
 bin/
 *.exe
 config.toml
+.pigo-data/
 .idea/
 .vscode/
 *.log

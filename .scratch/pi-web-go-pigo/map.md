@@ -50,6 +50,10 @@
 - [15 里程碑验收与 E2E](issues/15-milestone-e2e-acceptance.md) — 验收清单/部署文档/冒烟测试完成；M3 真实登录依赖 pigo 侧能力
 - [13 OAuth 可行性研究](issues/13-oauth-feasibility-research.md) — 流程可纯 Go；pigo 仅静态 API key，OpenRouter 先试点，其余 gap
 - [14 skills/plugins 委托矩阵](issues/14-skills-plugins-delegation.md) — 14 项操作映射 Go-native/skills.sh/pigo CLI/unsupported-with-doc；双轨状态与无热 reload 是主要风险
+- config 修复（2026-08-14）：`pigo.base_url` 默认值清空，`validate()` 始终按 `host:port` 重建——修复 TOML 仅改 `port` 时 baseURL 残留默认 4096 导致代理 502 的 bug；显式 `base_url` / `PIGO_BASE_URL` 仍优先
+- pigo 数据隔离（2026-08-14）：新增 `[pigo] data_dir` 配置（supervisor spawn 时注入 `PIGO_HOME`，相对路径转绝对）——修复本机其他 pigo/pi 实例（DSH）独占 `~/.pigo/sessions.db` 导致本实例只读打开、写入报 `readonly database` 的问题；测试环境数据统一放 `bin/`
+- cwd/browse 契约修复（2026-08-14）：`directories` 由字符串数组改为 `{name,path}` 对象数组（R1 对齐 pi-web）；Windows 无 path/盘符根时返回 `drives` 盘符列表——修复目录选择器显示错乱、点击失效
+- systemPrompt 暴露修复（2026-08-14）：Go 端 `get`/`get_state` 不再硬编码 `systemPrompt:""`（改 null），前端 `?? null` 保持"加载"态——消除工具未禁用却误报"（工具已禁用）"；工具真正禁用时仍由前端 rpc-manager 强制 `""`（与 upstream 一致）。**pigo 缺口**：pigo 0.4.1 的 modes/config/load/status API 均不暴露 systemPrompt，需记 pigo 侧 ticket（P1）
 
 ## Not yet specified
 

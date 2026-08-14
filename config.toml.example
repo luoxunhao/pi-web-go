@@ -12,6 +12,9 @@ args = ["serve"]
 host = "127.0.0.1"
 port = 4096
 auto_start = true
+# Optional pigo data directory (injected as PIGO_HOME). Set this to isolate
+# this instance's sessions.db/memory from other pigo/pi processes (e.g. DSH).
+# data_dir = "bin"
 # Optional override for the internal pigo password. When unset, a random
 # password is generated per process.
 # password = ""

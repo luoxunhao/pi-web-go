@@ -1,0 +1,2 @@
+# Placeholder: keeps the go:embed dist/ tree present on fresh clones so the
+# package compiles before `make build` copies frontend/dist here.

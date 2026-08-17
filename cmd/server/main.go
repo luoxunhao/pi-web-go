@@ -17,6 +17,7 @@ import (
 	"github.com/luoxunhao/pi-web-go/internal/pigo"
 	"github.com/luoxunhao/pi-web-go/internal/server"
 	"github.com/luoxunhao/pi-web-go/internal/session"
+	"github.com/luoxunhao/pi-web-go/internal/webui"
 )
 
 func main() {
@@ -43,7 +44,7 @@ func main() {
 		Cursor:       events.NewCursorStore(),
 		SessionMgr:   session.NewManager(10 * time.Minute),
 		FileAccess:   access,
-		StaticDir:    cfg.Web.FrontendDir,
+		Static:       webui.StaticFS(cfg.Web.FrontendDir),
 		WebPassword:  cfg.Web.Password,
 		AllowedHosts: cfg.Web.AllowedHosts,
 	}

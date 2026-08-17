@@ -3,9 +3,9 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
-	"os"
-	"path/filepath"
+	"path"
 	"strings"
 	"time"
 
@@ -95,23 +95,59 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Get("/api/auth/providers", mh.providers)
 		r.Get("/api/auth/all-providers", mh.allProviders)
 	}
-	if deps.StaticDir != "" {
-		staticRoot := http.Dir(deps.StaticDir)
-		fileServer := http.FileServer(staticRoot)
+	if deps.Static != nil {
+		fileServer := http.FileServer(deps.Static)
 		r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 			if strings.HasPrefix(r.URL.Path, "/api/") {
 				writeNotFound(w)
 				return
 			}
-			target := filepath.Join(deps.StaticDir, filepath.FromSlash(strings.TrimPrefix(r.URL.Path, "/")))
-			if stat, err := os.Stat(target); err == nil && !stat.IsDir() {
-				fileServer.ServeHTTP(w, r)
+			// Serve the exact file when it exists; everything else is the SPA
+			// entry point (client-side routing), mirroring the disk-only
+			// behavior but working for both http.Dir and embedded FS.
+			if serveStaticFile(deps.Static, fileServer, w, r) {
 				return
 			}
-			http.ServeFile(w, r, filepath.Join(deps.StaticDir, "index.html"))
+			serveStaticIndex(deps.Static, w, r)
 		})
 	}
 	return r
+}
+
+// serveStaticFile serves r.URL.Path from fsys when it names an existing file.
+// It returns false when the path is a directory or missing, leaving the caller
+// to fall back to the SPA entry point.
+func serveStaticFile(fsys http.FileSystem, fileServer http.Handler, w http.ResponseWriter, r *http.Request) bool {
+	name := path.Clean(strings.TrimPrefix(r.URL.Path, "/"))
+	if name == "" || name == "." || strings.Contains(name, "..") {
+		// Root, directories, and traversal attempts all go to the SPA entry
+		// (embed.FS rejects ".." outright; keep the guard for http.Dir).
+		return false
+	}
+	f, err := fsys.Open(name)
+	if err != nil {
+		return false
+	}
+	f.Close()
+	fileServer.ServeHTTP(w, r)
+	return true
+}
+
+// serveStaticIndex serves the SPA entry point (index.html) with a correct
+// Content-Type, working for both embedded and disk filesystems.
+func serveStaticIndex(fsys http.FileSystem, w http.ResponseWriter, r *http.Request) {
+	f, err := fsys.Open("index.html")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	defer f.Close()
+	if rs, ok := f.(io.ReadSeeker); ok {
+		http.ServeContent(w, r, "index.html", time.Time{}, rs)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = io.Copy(w, f)
 }
 
 func writeNotFound(w http.ResponseWriter) {

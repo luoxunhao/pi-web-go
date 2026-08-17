@@ -1,6 +1,8 @@
 package server
 
 import (
+	"net/http"
+
 	"github.com/luoxunhao/pi-web-go/internal/events"
 	"github.com/luoxunhao/pi-web-go/internal/files"
 	"github.com/luoxunhao/pi-web-go/internal/pigo"
@@ -14,7 +16,7 @@ type Dependencies struct {
 	Cursor       *events.CursorStore
 	SessionMgr   *session.Manager
 	FileAccess   *files.Access
-	StaticDir    string
+	Static       http.FileSystem // frontend files (embedded or disk); nil disables static hosting
 	WebPassword  string
 	AllowedHosts []string
 }

@@ -54,6 +54,7 @@
 - pigo 数据隔离（2026-08-14）：新增 `[pigo] data_dir` 配置（supervisor spawn 时注入 `PIGO_HOME`，相对路径转绝对）——修复本机其他 pigo/pi 实例（DSH）独占 `~/.pigo/sessions.db` 导致本实例只读打开、写入报 `readonly database` 的问题；测试环境数据统一放 `bin/`
 - cwd/browse 契约修复（2026-08-14）：`directories` 由字符串数组改为 `{name,path}` 对象数组（R1 对齐 pi-web）；Windows 无 path/盘符根时返回 `drives` 盘符列表——修复目录选择器显示错乱、点击失效
 - systemPrompt 暴露修复（2026-08-14）：Go 端 `get`/`get_state` 不再硬编码 `systemPrompt:""`（改 null），前端 `?? null` 保持"加载"态——消除工具未禁用却误报"（工具已禁用）"；工具真正禁用时仍由前端 rpc-manager 强制 `""`（与 upstream 一致）。**pigo 缺口**：pigo 0.4.1 的 modes/config/load/status API 均不暴露 systemPrompt，需记 pigo 侧 ticket（P1）
+- E1 落地（2026-08-14）：新增 `internal/webui` 包 `//go:embed all:dist`（占位 `.gitkeep` 保证干净 clone 可编译）；`make build` 的 `frontend-embed` 步骤把 `frontend/dist` 复制进 embed 树；`webui.StaticFS` 按"embed 有 index.html → http.FS，否则 → 磁盘 frontend_dir，都没有 → nil"选择来源；router 静态托管改为 `http.FileSystem` 抽象 + SPA fallback（serveStaticFile/serveStaticIndex）。已用「移走磁盘 dist 后服务仍 200」冒烟验证单文件形态。测试为状态无关幂等（embed 空/满两种状态下均通过）
 
 ## Not yet specified
 

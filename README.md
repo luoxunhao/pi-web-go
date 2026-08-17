@@ -1,6 +1,6 @@
 # pi-web-go
 
-pi-web 的纯 Go 后端重构：Go server 托管并代理 `pigo serve` 的 HTTP API，前端由 upstream pi-web 迁移为 Vite React SPA。**运行期零 Node 依赖**，交付形态为「单个 Go 可执行文件 + 静态前端目录」。
+pi-web 的纯 Go 后端重构：Go server 托管并代理 `pigo serve` 的 HTTP API，前端由 upstream pi-web 迁移为 Vite React SPA。**运行期零 Node 依赖**，交付形态为「单个 Go 可执行文件」——前端产物由 `make build` 复制进 `internal/webui/dist` 并以 `go:embed` 内嵌（E1）；未嵌入时回退到磁盘 `frontend_dir`（开发模式）。
 
 ## 特性
 
@@ -43,8 +43,8 @@ pi-web 的纯 Go 后端重构：Go server 托管并代理 `pigo serve` 的 HTTP 
 # 1. 构建前端（产物输出到 frontend/dist）
 cd frontend && npm install && npm run build && cd ..
 
-# 2. 构建后端
-go build -o pi-web-go.exe ./cmd/server
+# 2. 构建后端（自动把 frontend/dist 嵌入二进制）
+make build        # 等价于：go build -o pi-web-go.exe ./cmd/server
 
 # 3. 运行（pigo 默认自动启动）
 ./pi-web-go.exe

@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -358,5 +360,73 @@ func TestSessionGetIncludesModelContext(t *testing.T) {
 	}
 	if body.Context.ThinkingLevel != "medium" {
 		t.Fatalf("thinkingLevel = %q", body.Context.ThinkingLevel)
+	}
+}
+
+// TestRouterStaticHosting verifies the static frontend hosting and SPA
+// fallback over an http.FileSystem source (disk dir here; the embedded
+// frontend goes through the same http.FS adapter).
+func TestRouterStaticHosting(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "index.html"), []byte("<html>spa</html>"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "assets"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "assets", "app.js"), []byte("console.log(1)"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	deps := Dependencies{
+		Converter:  events.NewConverter(),
+		Cursor:     events.NewCursorStore(),
+		SessionMgr: session.NewManager(time.Minute),
+		Static:     http.Dir(dir),
+	}
+	router := NewRouter(deps)
+
+	cases := []struct {
+		name string
+		path string
+		want int
+		body string
+	}{
+		{"root serves index", "/", http.StatusOK, "<html>spa</html>"},
+		{"asset served", "/assets/app.js", http.StatusOK, "console.log(1)"},
+		{"client route falls back to index", "/some/client/route", http.StatusOK, "<html>spa</html>"},
+		{"api 404 stays json", "/api/not-found", http.StatusNotFound, `{"error":"Not found"}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			req.Host = "127.0.0.1"
+			rec := httptest.NewRecorder()
+			router.ServeHTTP(rec, req)
+			if rec.Code != tc.want {
+				t.Fatalf("GET %s = %d, want %d (body %q)", tc.path, rec.Code, tc.want, rec.Body.String())
+			}
+			if !strings.Contains(rec.Body.String(), tc.body) {
+				t.Fatalf("GET %s body = %q, want contains %q", tc.path, rec.Body.String(), tc.body)
+			}
+		})
+	}
+}
+
+// TestRouterNoStatic confirms the router stays functional (API only) when no
+// static source is configured.
+func TestRouterNoStatic(t *testing.T) {
+	deps := Dependencies{
+		Converter:  events.NewConverter(),
+		Cursor:     events.NewCursorStore(),
+		SessionMgr: session.NewManager(time.Minute),
+	}
+	router := NewRouter(deps)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Host = "127.0.0.1"
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("GET / without static = %d, want 404", rec.Code)
 	}
 }
